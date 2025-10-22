@@ -24,7 +24,17 @@ from rlsolver.methods.eco_s2v.src.envs.util_envs import (SingleGraphGenerator, S
 def peco_test_network(network, test_env, local_search_frequency):
     result = {}
     obj_vs_time = {}
-    test_scores = test_env.get_best_cut()
+    # 根据优化目标选择正确的方法
+
+    try:
+
+        best_value = env.get_best_cut()
+
+    except NotImplementedError:
+
+        # 如果是MIS问题，使用get_best_mis
+
+        best_value = env.get_best_mis()
     obj_vs_time["0"] = test_scores
 
     if USE_TENSOR_CORE_IN_INFERENCE:
@@ -57,7 +67,17 @@ def peco_test_network(network, test_env, local_search_frequency):
             actions = predict(network, state.to(torch.float16)).squeeze(-1)
         else:
             actions = predict(network, state).squeeze(-1)
-    test_scores = test_env.get_best_cut()
+    # 根据优化目标选择正确的方法
+
+    try:
+
+        best_value = env.get_best_cut()
+
+    except NotImplementedError:
+
+        # 如果是MIS问题，使用get_best_mis
+
+        best_value = env.get_best_mis()
     obj, obj_indices = torch.max(test_scores, dim=0)
     sol = test_env.best_spins[obj_indices]
     result["obj"] = obj.item()
@@ -160,7 +180,22 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
             greedy_agent = Greedy(greedy_env)
             greedy_agent.solve()
 
-            greedy_single_cut = greedy_env.get_best_cut()
+            # 根据优化目标选择正确的方法
+
+
+            try:
+
+
+                best_value = env.get_best_cut()
+
+
+            except NotImplementedError:
+
+
+                # 如果是MIS问题，使用get_best_mis
+
+
+                best_value = env.get_best_mis()
             greedy_single_spins = greedy_env.best_spins
 
         print("done.")
@@ -234,7 +269,22 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                         if not done:
                             obs_batch.append(obs)
                         else:
-                            best_cuts_batch[i] = env.get_best_cut()
+                            # 根据优化目标选择正确的方法
+                            try:
+                                # 根据优化目标选择正确的方法
+
+                                try:
+
+                                    best_value = env.get_best_cut()
+
+                                except NotImplementedError:
+
+                                    # 如果是MIS问题，使用get_best_mis
+
+                                    best_value = env.get_best_mis()
+                            except NotImplementedError:
+                                # 如果是MIS问题，使用get_best_mis
+                                best_cuts_batch[i] = env.get_best_mis()
                             best_spins_batch[i] = env.best_spins
                             i_comp_batch += 1
                             i_comp += 1
@@ -258,7 +308,17 @@ def __test_network_batched(network, env_args, graphs_test, device=None, step_fac
                     print("Running greedy solver with {} random initialisations of spins for batch {}...".format(batch_size, i_batch), end="...")
                     for env in greedy_envs:
                         Greedy(env).solve()
-                        cut = env.get_best_cut()
+                        # 根据优化目标选择正确的方法
+
+                        try:
+
+                            best_value = env.get_best_cut()
+
+                        except NotImplementedError:
+
+                            # 如果是MIS问题，使用get_best_mis
+
+                            best_value = env.get_best_mis()
                         greedy_cuts_batch.append(cut)
                         greedy_spins_batch.append(env.best_spins)
                     print("done.")
@@ -392,7 +452,22 @@ def __test_network_sequential(network, env_args, graphs_test, step_factor=1,
 
         greedy_agent.solve()
 
-        greedy_single_cut = greedy_env.get_best_cut()
+        # 根据优化目标选择正确的方法
+
+
+        try:
+
+
+            best_value = env.get_best_cut()
+
+
+        except NotImplementedError:
+
+
+            # 如果是MIS问题，使用get_best_mis
+
+
+            best_value = env.get_best_mis()
         greedy_single_spins = greedy_env.best_spins
 
         for k in range(n_attempts):
@@ -405,14 +480,44 @@ def __test_network_sequential(network, env_args, graphs_test, step_factor=1,
             net_agent.solve()
             times.append(time.time() - start_time2)
 
-            cut = test_env.get_best_cut()
+            # 根据优化目标选择正确的方法
+
+
+            try:
+
+
+                best_value = env.get_best_cut()
+
+
+            except NotImplementedError:
+
+
+                # 如果是MIS问题，使用get_best_mis
+
+
+                best_value = env.get_best_mis()
             if cut > best_cut:
                 best_cut = cut
                 best_spins = test_env.best_spins
 
             greedy_agent.solve()
 
-            greedy_cut = greedy_env.get_best_cut()
+            # 根据优化目标选择正确的方法
+
+
+            try:
+
+
+                best_value = env.get_best_cut()
+
+
+            except NotImplementedError:
+
+
+                # 如果是MIS问题，使用get_best_mis
+
+
+                best_value = env.get_best_mis()
             if greedy_cut > greedy_random_cut:
                 greedy_random_cut = greedy_cut
                 greedy_random_spins = greedy_env.best_spins

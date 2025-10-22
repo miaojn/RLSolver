@@ -1,4 +1,12 @@
+import os
+import sys
+# 添加项目根目录到 Python 路径
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 import time
+import numpy as np
 
 import torch
 
@@ -45,24 +53,32 @@ def run(save_loc="BA_40spin/eco",
     # SET UP ENVIRONMENTAL AND VARIABLES
     ####################################################
 
+    # 根据 PROBLEM 选择优化目标
+    if PROBLEM == Problem.maxcut:
+        opt_target = OptimisationTarget.CUT
+    elif PROBLEM == Problem.MIS:
+        opt_target = OptimisationTarget.MIS
+    else:
+        opt_target = OptimisationTarget.ENERGY
+
     if ALG in [Alg.s2v]:
         env_args = {'observables': [Observable.SPIN_STATE],
                     'reward_signal': RewardSignal.DENSE,
                     'extra_action': ExtraAction.NONE,
-                    'optimisation_target': OptimisationTarget.CUT,
+                    'optimisation_target': opt_target,
                     'spin_basis': SpinBasis.BINARY,
                     'norm_rewards': True,
                     'memory_length': None,
                     'horizon_length': None,
                     'stag_punishment': None,
                     'basin_reward': None,
-                    'reversible_spins': False,
+                    'reversible_spins': True,  # 修复：改为True避免违规边
                     'if_greedy': if_greedy}
     else:
         env_args = {'observables': DEFAULT_OBSERVABLES,
                     'reward_signal': RewardSignal.BLS,
                     'extra_action': ExtraAction.NONE,
-                    'optimisation_target': OptimisationTarget.CUT,
+                    'optimisation_target': opt_target,
                     'spin_basis': SpinBasis.BINARY,
                     'norm_rewards': True,
                     'memory_length': None,
@@ -124,7 +140,13 @@ def run(save_loc="BA_40spin/eco",
             if label == "results":
                 result = (res['sol'][0] + 1) / 2
                 result = result.astype(int)
-                obj = res['cut'][0]
+                # 根据问题类型选择正确的目标函数
+                if PROBLEM == Problem.MIS:
+                    # 对于MIS问题，直接计算选中节点数
+                    solution = (res['sol'][0] + 1) / 2
+                    obj = int(np.sum(solution))
+                else:
+                    obj = res['cut'][0]
                 num_nodes = len(result)
                 write_graph_result(obj, run_duration, num_nodes, ALG.value, result, graph_dict, plus1=True)
 
